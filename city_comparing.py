@@ -145,7 +145,7 @@ def get_event_information(a_page_url):
 # Crawling
 def crawl_event_pages(event_brite_state_url, event_crawling_numbers):
     '''Crawling eventbrite pages and get event information from each page.
-    
+
     Parameters
     ----------
     event_brite_city_url: string
@@ -208,6 +208,18 @@ def get_restaurant_information(a_city):
 
 
 def get_yelp_offset_number():
+    '''Get a list of offset numbers increased by 50.
+    i.e. 0, 50, 100, 150, 200, ...
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    list
+        a list of offset numbers
+    '''
     '''
     (my) Add Docstring
     '''
@@ -352,7 +364,7 @@ def make_request(baseurl, params=None, headers=None):
 
 def make_request_with_cache(baseurl, params=None, headers=None):
     '''Check the cache for a saved result for this baseurl+params
-    combo. If the result is found, return it. Otherwise send a new 
+    combo. If the result is found, return it. Otherwise send a new
     request, save it, then return it.
 
     Parameters
@@ -462,7 +474,7 @@ def load_locations():
     conn = sqlite3.connect(DB_NAME)
     cur = conn.cursor()
     for city_data in file_reader:
-        cur.execute(insert_location_sql, 
+        cur.execute(insert_location_sql,
             [
                 city_data[0], # City
                 city_data[2], # State
