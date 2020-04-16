@@ -394,9 +394,19 @@ def make_request_with_cache(baseurl, params=None, headers=None):
 
 '''
 Part 4 Database Acess and Storage
-'''
+''' 
 # Create Tables
 def create_db():
+    '''Create three tables (Locations, Events, and Restaurnts) in the database.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    None
+    '''
     # Create or connect database
     conn = sqlite3.connect(DB_NAME)
     cur = conn.cursor()
@@ -417,7 +427,7 @@ def create_db():
     create_events_sql = '''
         CREATE TABLE IF NOT EXISTS "Events"(
             "EventId" INTEGER PRIMARY KEY AUTOINCREMENT,
-            "Name" TEXT NOT NULL,
+            "EventName" TEXT NOT NULL,
             "Day" TEXT,
             "Date" TEXT,
             "Time" TEXT,
@@ -428,7 +438,7 @@ def create_db():
     create_restaurants_sql = '''
         CREATE TABLE IF NOT EXISTS "Restaurants"(
             "RestaurantId" TEXT PRIMARY KEY,
-            "Name" TEXT NOT NULL,
+            "RestaurantName" TEXT NOT NULL,
             "Price" TEXT,
             "Rating" REAL,
             "TotalReviews" INTEGER,
