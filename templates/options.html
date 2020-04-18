@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Options</title>
+        <style>
+            body{
+                font-size: 1.2em;
+            }
+
+            fieldset{
+                width: 50%;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Thank you for your input!</h1>
+
+        <p>We will compare <strong>{{user_city}}</strong> (your city) with Detroit city, a larget city in Michigan.</p>
+
+        <form action='/category' method="POST">
+            <fieldset>
+                <legend>Category Selection</legend>
+                <p>Please select what category you want to compare: </p>
+                <input id="event" name="category_compare" type="radio" value="events" checked="checked" required/>
+                <label for="event">Events</label><br/>
+
+                <input id="restaurant" name="category_compare" type="radio" value="restaurants"/>
+                <label for="restaurant">Restaurants</label><br/><br/>
+
+                <!-- Reference: I learned how to make the form go back from https://www.computerhope.com/issues/ch000317.htm -->
+                <input type="button" value="Back" onclick="history.back()">
+                <input type="submit" value="Submit">
+            </fieldset>
+        </form>
+    </body>
+</html>

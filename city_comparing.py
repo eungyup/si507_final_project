@@ -6,6 +6,8 @@ import secrets
 import csv
 import sqlite3
 import time
+from flask import Flask, render_template, render_template, request
+import plotly.graph_objects as go
 
 # For Caching
 CACHE_FILENAME = "cache.json"
@@ -41,6 +43,11 @@ YELP_API_KEY = secrets.YELP_API_KEY
 # For Cities Names
 US_CITIES = "uscities.csv"
 
+# For Flask
+app = Flask(__name__)
+
+# User's city to be retrieved later
+user_city = []
 
 '''
 (my)
@@ -174,7 +181,7 @@ def get_restaurant_information(a_city):
     Parameters
     ----------
     user_city: string
-        user's state
+        user's city
 
     Returns
     -------
@@ -581,84 +588,151 @@ def load_restaurants(restaurant_list, a_city):
     conn = sqlite3.connect(DB_NAME)
     cur = conn.cursor()
 
-    for row in restaurant_list:
-        if row['location']['city'].lower() == a_city and row['location']['state'].lower() == "mi":
-            cur.execute(select_location_id_sql, [
-                row['location']['city'], 
-                row['location']['state'],
+    '''
+    Check if a user searches the city before and the database has one.
+    (If I don't check it, the application crashes when the user checks the same city again.)
+    '''
+
+    q = '''
+        SELECT Locations.City
+        FROM Restaurants
+        JOIN Locations
+        ON Restaurants.LocationId = Locations.Id
+    '''
+    # print(f"q: {q}")
+    result_q = cur.execute(q).fetchall()
+    # result_q: [('Detroit',), ('Detroit',), ('Detroit',), ('Detroit',), ('Detroit',), ('Detroit',), 
+    # ('Detroit',), ('Detroit',), ('Detroit',), ('Detroit',), ('Detroit',), ('Detroit',), 
+    # ('Detroit',), ('Detroit',), ('Detroit',), ('Detroit',),…]
+
+    # print(f"result_q: {result_q}")
+
+    condition_check = 0
+
+    # For the first time use, there will be empty item in result_q. For that case, just skip for a_tuple in result_q: iterataion
+    # and got to if condition_check == 0: for row in restaurant_list:
+    if result_q:
+        for a_tuple in result_q:
+            if a_city != a_tuple[0].lower():
+                pass
+            else:
+                condition_check += 1
+
+    if condition_check == 0:
+        for row in restaurant_list:
+            if row['location']['city'].lower() == a_city and row['location']['state'].lower() == "mi":
+                cur.execute(select_location_id_sql, [
+                    row['location']['city'], 
+                    row['location']['state'],
+                    ])
+                res = cur.fetchone()
+                restaurant_location_id = None
+                if res is not None:
+                    restaurant_location_id = res[0]
+
+                price = None
+                if 'price' in row.keys():
+                    price = row['price']
+
+                rating = None
+                if 'rating' in row.keys():
+                    rating = row['rating']
+
+                review_count = None
+                if 'review_count' in row.keys():
+                    review_count = row['review_count']
+
+                display_phone = None
+                if 'display_phone' in row.keys():
+                    if row['display_phone'] == "":
+                        pass
+                    else:
+                        display_phone = row['display_phone']
+
+                cur.execute(insert_restaurant_sql, [
+                    row['id'], # Restaurant Business Id
+                    row['name'], # Restaurant Name
+                    price, # Price
+                    rating, # Rating
+                    review_count, # Total Reviews Count
+                    display_phone, # Phone Number
+                    restaurant_location_id
                 ])
-            res = cur.fetchone()
-            restaurant_location_id = None
-            if res is not None:
-                restaurant_location_id = res[0]
-
-            # Because sometimes there is no business ID which rarely happens, need to
-            # configure this
-            # id = None
-            # if 'id' in row.keys():
-            #     id = row['id']
-            # else:
-            #     id = f"No Business Id - {unique_counter}"
-            #     counter += 1
-
-            # name = None
-            # if 'name' in row.keys():
-            #     name = row['name']
-
-            price = None
-            if 'price' in row.keys():
-                price = row['price']
-
-            rating = None
-            if 'rating' in row.keys():
-                rating = row['rating']
-
-            review_count = None
-            if 'review_count' in row.keys():
-                review_count = row['review_count']
-
-            display_phone = None
-            if 'display_phone' in row.keys():
-                if row['display_phone'] == "":
-                    pass
-                else:
-                    display_phone = row['display_phone']
-
-            cur.execute(insert_restaurant_sql, [
-                row['id'], # Restaurant Business Id
-                row['name'], # Restaurant Name
-                price, # Price
-                rating, # Rating
-                review_count, # Total Reviews Count
-                display_phone, # Phone Number
-                restaurant_location_id
-            ])
-    conn.commit()
-    conn.close()
+        conn.commit()
+        conn.close()
+    else:
+        conn.commit()
+        conn.close()
 
 
 # Restaurant Query
-# Total number of restaurant in a city
-def total_number_of_restaurants(a_city):
+def restaurants_query_process(a_city, data_selection):
     '''
     (my) Add Docstring
     a_city -> string (lower)
     i.e. detroit, ann arbor
+    data_selection -> string
+    i.e. total_number_of_restaurants, average_restaurant_rating
     return a list of tuple(s) with average rating by city
     '''
     a_city_capital = capitalize_city_name(a_city)
 
-    # print(f"city capitalized: {a_city_capital}")
+    conn = sqlite3.connect(DB_NAME)
+    cur = conn.cursor()
+
+    if data_selection == 'total_number_of_restaurants':
+        select_item = 'COUNT(*)'
+    else:
+        select_item = 'AVG(Restaurants.Rating)'
+
+    query = f'''
+        SELECT {select_item}, Locations.City
+        FROM Restaurants
+        JOIN Locations
+        ON Restaurants.LocationId = Locations.Id
+        WHERE Locations.City = "{a_city_capital}"
+    '''
+
+    print(f"SQL Query: {query}")
+
+    cur.execute(query)
+    result = cur.fetchall()
+
+    # print(result)
+
+    conn.close()
+
+    return result
+
+
+# Events Query
+def events_query_process(a_city, data_selection):
+    '''
+    (my) Add Docstring
+    a_city -> string (lower)
+    i.e. detroit, ann arbor
+    data_selection -> string
+    i.e. total_number_of_events, total_number_of_events_on_weekend, total_number_of_events_on_weekday
+    return a list of tuple(s) with average rating by city
+    '''
+    a_city_capital = capitalize_city_name(a_city)
 
     conn = sqlite3.connect(DB_NAME)
     cur = conn.cursor()
+
+    if data_selection == 'total_number_of_events':
+        where_item = ""
+    elif data_selection == 'total_number_of_events_on_weekend':
+        where_item = 'AND (Events.Day = "Sat" or Events.Day = "Sun")'
+    else:
+        where_item  = 'AND (Events.Day != "Sat" AND Events.Day != "Sun")'
 
     query = f'''
         SELECT COUNT(*), Locations.City
-        FROM Restaurants
+        FROM Events
         JOIN Locations
-        ON Restaurants.LocationId = Locations.Id
-        WHERE Locations.City = "{a_city_capital}"
+        ON Events.LocationId = Locations.Id
+        WHERE Locations.City = "{a_city_capital}" {where_item}
     '''
 
     print(f"SQL Query: {query}")
@@ -671,42 +745,6 @@ def total_number_of_restaurants(a_city):
     conn.close()
 
     return result
-
-
-# Average restaurant rating for each cit
-def average_city_restaurant_rating(a_city):
-    '''
-    (my) Add Docstring
-    a_city -> string (lower)
-    i.e. detroit, ann arbor
-    return a list of tuple(s) with average rating by city
-    '''
-    a_city_capital = capitalize_city_name(a_city)
-
-    # print(f"city capitalized: {a_city_capital}")
-
-    conn = sqlite3.connect(DB_NAME)
-    cur = conn.cursor()
-
-    query = f'''
-        SELECT AVG(Restaurants.Rating), Locations.City
-        FROM Restaurants
-        JOIN Locations
-        ON Restaurants.LocationId = Locations.Id
-        WHERE Locations.City = "{a_city_capital}"
-    '''
-
-    print(f"SQL Query: {query}")
-
-    cur.execute(query)
-    result = cur.fetchall()
-
-    # print(result)
-
-    conn.close()
-
-    return result
-
 
 # Assistive function to capitalize city name
 def capitalize_city_name(a_city):
@@ -736,6 +774,125 @@ def capitalize_city_name(a_city):
     return a_city_capital
 
 
+'''
+Part 6 Data Presentation (Flask and Plotly)
+'''
+# app -> defined on the top
+# Home page
+@app.route('/')
+def index():
+    # Clear user_city so that it can take new one every time.
+    user_city.clear()
+    return render_template('index.html')
+
+# Options Page
+@app.route('/options', methods=['POST'])
+def options():
+    mi_cities_lowered = get_cities_name("MI")
+    # mi_cities_lowered -> a list of MI chities lowered (i.e. ann arbor, lansing)
+    user_input = request.form['city_input']
+    user_input_lower = user_input.lower()
+
+    # user_city (list)was defined on the top so that other function can use it too.
+    user_city.append(capitalize_city_name(user_input))
+
+    if user_input_lower in mi_cities_lowered:
+        return render_template('options.html', user_city=user_city[0])
+    else:
+        return render_template('error.html', user_city=user_city[0])
+
+# Restaurant Page
+@app.route('/category', methods=['POST'])
+def category():
+    # category is either "events" or "restaurants"
+    category = request.form['category_compare']
+
+    # For category url (events)
+    category_capitalize = category.capitalize()
+
+    return render_template('category.html', category=category, category_capitalize=category_capitalize)
+
+# Results Page
+@app.route('/category/<category>/results', methods=['POST'])
+def results(category):
+    data_selection = request.form['category_radio']
+    data_selection_split = data_selection.split('_')
+
+    data_selection_configured = ''
+
+    user_city_results = user_city[0]
+    user_city_results_lower = user_city_results.lower()
+
+    # Convert data_selection i.e. "total_number_of_restaurants" to "Total Number Of Restaurants"
+    for i in range(len(data_selection_split)):
+        if i < (len(data_selection_split)-1):
+            data_selection_configured += data_selection_split[i].capitalize() + " "
+        else:
+            data_selection_configured += data_selection_split[i].capitalize()
+
+    # Restaurants
+    if data_selection == 'total_number_of_restaurants' or data_selection == 'average_restaurant_rating':
+        '''
+        Detroit's City's Restaurant should be already done in the main section.
+        '''
+
+        '''
+        User's City's Restaurant
+        '''
+        # Get User's City's Restaurant information and put it to the DB
+        user_city_restaurants = get_restaurant_information(user_city_results_lower)
+        load_restaurants(user_city_restaurants, user_city_results_lower)
+
+        '''
+        Results of Restaurants
+        '''
+        # Result exmaple
+        # i.e. Total Restaurants numbers in Detroit: [(696, 'Detroit')]
+        # i.e. Average Rating in Detroit: [(3.9331896551724137, 'Detroit')]
+        detroit_result = restaurants_query_process('detroit', data_selection)[0][0]
+        user_result = restaurants_query_process(user_city_results_lower, data_selection)[0][0]
+
+    # Events
+    else:
+        '''
+        Events Crawling and Scraping should be already done in the main section.
+        '''
+
+        '''
+        Results of Restaurants
+        '''
+        # Result exmaple
+        # i.e. Total Restaurants numbers in Detroit: [(180, 'Detroit')]
+        # i.e. Average Rating in Detroit: [(3.9331896551724137, 'Detroit')]
+        detroit_result = events_query_process('detroit', data_selection)[0][0]
+        user_result = events_query_process(user_city_results_lower, data_selection)[0][0]
+
+
+    # barplot -> True or False
+    barplot = 'barplot' in request.form.keys()
+
+    if barplot:
+        x_axis = [user_city_results, 'Detroit']
+        y_axis = [user_result, detroit_result]
+
+        barplot_data = go.Bar(x=x_axis, y=y_axis)
+        basic_layout = go.Layout(title=f"{data_selection_configured}: {user_city_results} v.s. Detroit")
+        fig = go.Figure(data=barplot_data, layout=basic_layout)
+
+        div = fig.to_html(full_html=False)
+
+        return render_template('results.html', data_selection=data_selection_configured, barplot=barplot, plot_div=div)
+
+    else:
+        return render_template('results.html', 
+        user_city=user_city_results, 
+        data_selection=data_selection_configured,
+        detroit_result=detroit_result,
+        user_result=user_result,
+        barplot=barplot
+        )
+
+
 if __name__ == "__main__":
 
     '''
@@ -749,28 +906,14 @@ if __name__ == "__main__":
     '''
     Test Part 1 and 2
     '''
-    # Get all Michigan Events First
+    # Use Cache
     CACHE_DICT = open_cache()
+    '''
+    Events in Michigan
+    '''
     michigan_event_url = 'https://www.eventbrite.com/d/united-states--michigan/all-events/'
 
     crawl_event_pages(michigan_event_url, state_event_crawling_numbers)
-
-    # print(f"events name: {event_names}")
-    # print(f"total # of events: {len(event_names)}")
-    # print(f"location: {event_location}")
-    # print(f"total # of locations: {len(event_location)}")
-    # print(f"city: {event_city}")
-    # print(f"total # of city: {len(event_city)}")
-    # print(f"state: {event_state}")
-    # print(f"total # of state: {len(event_state)}")
-    # print(f"calendar: {event_calendar}")
-    # print(f"total # of calendar: {len(event_calendar)}")
-    # print(f"day: {event_day}")
-    # print(f"total # of day: {len(event_day)}")
-    # print(f"date: {event_date}")
-    # print(f"total # of date: {len(event_date)}")
-    # print(f"time: {event_time}")
-    # print(f"total # of time: {len(event_time)}")
 
     michigan_all_events = []
 
@@ -791,75 +934,15 @@ if __name__ == "__main__":
     # Insert Michigan State Events records to the database
     load_events(michigan_all_events)
 
+    '''
+    Detroit's City's Restaurant
+    '''
     # Insert Detroit Restaurants records to the database
     detroit_restaurants = get_restaurant_information("detroit")
-
     print(f"total # of restaurants in detroit + near detroit raw data: {len(detroit_restaurants)}")
-
     load_restaurants(detroit_restaurants, "detroit")
 
-    # print(get_restaurant_information('detroit'))
-
-    # Total number of restaurants in Detroit
-    detroit_restaurants_numbers = total_number_of_restaurants("detroit")
-    print(f"Total Restaurants numbers in Detroit: {detroit_restaurants_numbers}")
-
-    # Detroit's Restaurants Average Rating
-    # i.e. [(3.9340974212034383, 'Detroit')]
-    detroit_restaurants_average_rating = average_city_restaurant_rating("detroit")
-    print(f"Average Rating in Detroit: {detroit_restaurants_average_rating}")
-
-
     '''
-    Part 3: Interactive: Midpoint Test
+    Part 6 Data Presentation
     '''
-
-    # Get all cities name in Michigan
-    mi_cities_lowered = get_cities_name("MI")
-    # print(mi_cities)
-    # There are 690 cities/townships
-    # print(len(mi_cities))
-    # i.e. an_event_city_name_for_url = "ann-arbor"
-    an_event_city_name_for_url = ""
-
-    print("Is your city in Michigan performing better than Detroit city (the largets city in MI)?")
-    while True:
-        user_input = input('Please type your city in Michigan (i.e. Ann Arbor, Lansing, etc) or type "exit" to end: ')
-
-        # Because .isalpha() takes space between words no alphabet, use replace()
-        if user_input.replace(' ','').isalpha():
-            user_input_lower = user_input.lower()
-            if user_input_lower == "exit":
-                exit()
-            else:
-                if user_input_lower in mi_cities_lowered:
-                    '''
-                    Eventbrite
-                    '''
-
-                    # print(f"Your input is {user_input_lower}")
-                    # user_city_restaurant_dict = get_restaurant_information(user_input_lower)
-                    # print(user_city_restaurant_dict)
-
-                    '''
-                    User's City's Restaurant
-                    '''
-                    # Get User's City's Restaurant information and put it to the DB
-                    # print("user input", user_input_lower)
-                    user_city_restaurants = get_restaurant_information(user_input_lower)
-                    # print(f"user city restaurants: {user_city_restaurants}")
-                    load_restaurants(user_city_restaurants, user_input_lower)
-
-                    # Total Number of Restaurant in the User's City
-                    user_city_restaurants_numbers = total_number_of_restaurants(user_input_lower)
-                    print(f"Total Restaurants numbers in {user_input_lower}: {user_city_restaurants_numbers}")
-                    # User's Cities Average Restaurant Rating
-                    # i.e. [(3.617879746835443, 'Ann Arbor')]
-                    user_city_restaurants_rating = average_city_restaurant_rating(user_input_lower)
-                    print(f"Average Restaurant Rating in {user_input_lower}: {user_city_restaurants_rating}")
-
-
-                else:
-                    print("Your city is not in Michigan or you put invalid input. Please try again.")
-        else:
-            print("Incorrect Input. Please try again")
+    app.run(debug=True)

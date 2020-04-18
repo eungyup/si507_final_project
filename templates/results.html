@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Results</title>
+        <style>
+            body{
+                font-size: 1.2em;
+            }
+            table,tr,th,td{
+                border:1px solid black;
+                border-collapse: collapse;
+                padding: 8px;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>{{data_selection}}</h1>
+
+        {% if barplot %}
+        <h2>Barplot</h2>
+        {{ plot_div | safe}}
+
+
+        {% else %}
+        <table>
+            <tr>
+                <th>{{user_city}}</th>
+                <th>Detroit</th>
+            </tr>
+            <tr>
+                <td>{{user_result}}</td>
+                <td>{{detroit_result}}</td>
+            </tr>
+        </table>
+        {% endif %}
+        <P>Want to try another city? Please go back to <a href="/">home</a> and try again.</P>
+    </body>
+</html>

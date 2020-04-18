@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>{{category_capitalize}}</title>
+        <style>
+            body{
+                font-size: 1.2em;
+            }
+            fieldset{
+                width: 50%;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>{{category_capitalize}}</h1>
+
+        <p>Please select how you want to compare data.</p>
+
+        <form action='/category/{{category}}/results' method="POST">
+            <fieldset>
+                <legend>Selection of Data</legend>
+                    {% if category == 'restaurants' %}
+                    <!-- category == 'restaurants' -->
+                    <input id="total_number_restaurants" name="category_radio" type="radio" checked="checked" value="total_number_of_restaurants" required/>
+                    <label for="total_number_restaurants">Total Nnumber of Restaurants</label> <br/>
+
+                    <input id="average_rating" name="category_radio" type="radio" value="average_restaurant_rating"/>
+                    <label for="average_rating">Average Restaurant Rating</label>
+
+                    {% else %}
+                    <!-- category == 'events' -->
+                    <input id="total_number_events" name="category_radio" type="radio" checked="checked" value="total_number_of_events" required>
+                    <label for="total_number_events">Total Nnumber of Events</label><br/>
+
+                    <input id="total_number_events_weekend" name="category_radio" type="radio" value="total_number_of_events_on_weekend"/>
+                    <label for="total_number_events_weekend">Events Numbers on the Weekend</label><br/>
+
+                    <input id="total_number_events_weekday" name="category_radio" type="radio" value="total_number_of_events_on_weekday"/>
+                    <label for="total_number_events_weekday">Events Numbers on the Weekday</label><br/>
+                    {% endif %}
+
+                    <p>Do you want to see data in bar graph?</p>
+                    <input id="barplot_checkbox" name="barplot" type="checkbox"/>
+                    <label for="barplot_checkbox">Bar Graph </label><br/><br/>
+
+                <!-- Reference: I learned how to make the form go back from https://www.computerhope.com/issues/ch000317.htm -->
+                <input type="button" value="Back" onclick="history.back()">
+                <input type="submit" value="Submit">
+            </fieldset>
+        </form>
+    </body>
+</html>
