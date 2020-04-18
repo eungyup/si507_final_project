@@ -945,4 +945,4 @@ if __name__ == "__main__":
     '''
     Part 6 Data Presentation
     '''
-    app.run(debug=True)
+    app.run(debug=False)
