@@ -774,6 +774,20 @@ def capitalize_city_name(a_city):
     return a_city_capital
 
 
+
+# Configure float formatting
+def float_formatting(float_number):
+    '''
+    (my) Add Docstring
+    float_number -> float
+    i.e. 3.9331896551724137
+    return i.e. 3.93
+    '''
+
+    float_formatted = "{:.1f}".format(float_number)
+
+    return float_formatted
+
 '''
 Part 6 Data Presentation (Flask and Plotly)
 '''
@@ -852,6 +866,13 @@ def results(category):
         detroit_result = restaurants_query_process('detroit', data_selection)[0][0]
         user_result = restaurants_query_process(user_city_results_lower, data_selection)[0][0]
 
+        # print(f"type: {type(detroit_result)}")
+
+        if type(detroit_result) is float:
+            detroit_result = float_formatting(detroit_result)
+        if type(user_result) is float:
+            user_result = float_formatting(user_result)
+
     # Events
     else:
         '''
@@ -859,14 +880,12 @@ def results(category):
         '''
 
         '''
-        Results of Restaurants
+        Results of Events
         '''
         # Result exmaple
-        # i.e. Total Restaurants numbers in Detroit: [(180, 'Detroit')]
-        # i.e. Average Rating in Detroit: [(3.9331896551724137, 'Detroit')]
+        # i.e. Total Events numbers in Detroit: [(180, 'Detroit')]
         detroit_result = events_query_process('detroit', data_selection)[0][0]
         user_result = events_query_process(user_city_results_lower, data_selection)[0][0]
-
 
     # barplot -> True or False
     barplot = 'barplot' in request.form.keys()
