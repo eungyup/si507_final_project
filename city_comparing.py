@@ -240,19 +240,28 @@ def get_yelp_offset_number():
 
 
 def get_cities_name(state_name):
-    '''
-    (my) Add Docstring
+    '''Get a cities list in a state.
 
-    got a whole list of cities names in US from https://simplemaps.com/data/us-cities
-    state_name-> name of the state (two character)
-    i.e."city","city_ascii","state_id","state_name","county_fips","county_name","county_fips_all","county_name_all","lat","lng","population","density","source","military","incorporated","timezone","ranking","zips","id"
-    "South Creek","South Creek","WA","Washington","53053","Pierce","53053","Pierce","46.9994","-122.3921","2500","125","polygon","FALSE","TRUE","America/Los_Angeles","3","98580 98387 98338","1840042075"
-    return -> a list of lower cased cities names in the state
+    Parameters
+    ----------
+    state_name: string
+        name of the state (two character)
+        i.e. MI
+
+    Returns
+    -------
+    list
+        a list of lower cased cities names in the state
     '''
     cities_list = []
 
     file_contents = open(US_CITIES,'r')
     file_reader = csv.reader(file_contents)
+
+    # Headers: "city","city_ascii","state_id","state_name","county_fips","county_name","county_fips_all","county_name_all","lat","lng",
+    # "population","density","source","military","incorporated","timezone","ranking","zips","id"
+    # i.e. Records: "South Creek","South Creek","WA","Washington","53053","Pierce","53053","Pierce","46.9994","-122.3921",
+    # "2500","125","polygon","FALSE","TRUE","America/Los_Angeles","3","98580 98387 98338","1840042075"
 
     # Skip header row
     next(file_contents)
@@ -264,8 +273,8 @@ def get_cities_name(state_name):
 
     return cities_list
 
+
 '''
-(my)
 Part 2: Caching
 '''
 def open_cache():
@@ -351,9 +360,13 @@ def make_request(baseurl, params=None, headers=None):
     params: dictionary
         A dictionary of param: param_value pairs
 
+    headers: dictionary
+        A dictionary of headers
+        i.e. headers = {'Authorization': f'Bearer {YELP_API_KEY}'}
+
     Returns
     -------
-    dictionart
+    dictionary
         the results of the query as a Python object loaded from JSON
     or
     string
@@ -370,7 +383,7 @@ def make_request(baseurl, params=None, headers=None):
 
 
 def make_request_with_cache(baseurl, params=None, headers=None):
-    '''Check the cache for a saved result for this baseurl+params
+    '''Check the cache for a saved result for this baseurl+params+headers
     combo. If the result is found, return it. Otherwise send a new
     request, save it, then return it.
 
@@ -381,6 +394,10 @@ def make_request_with_cache(baseurl, params=None, headers=None):
 
     params: dictionary
         A dictionary of param: param_value pairs
+
+    headers: dictionary
+        A dictionary of headers
+        i.e. headers = {'Authorization': f'Bearer {YELP_API_KEY}'}
 
     Returns
     -------
@@ -393,15 +410,14 @@ def make_request_with_cache(baseurl, params=None, headers=None):
         return CACHE_DICT[request_key]
     else:
         print(f"Fetching {request_key}")
-        # print(f"request_key: {request_key}")
         CACHE_DICT[request_key] = make_request(baseurl, params, headers)
         save_cache(CACHE_DICT)
         return CACHE_DICT[request_key]
 
 
 '''
-Part 4 Database Acess and Storage
-''' 
+Part 4 Database Access and Storage
+'''
 # Create Tables
 def create_db():
     '''Create three tables (Locations, Events, and Restaurnts) in the database.
@@ -467,7 +483,7 @@ def create_db():
 # Part 4-b-i Load Cities Data
 def load_locations():
     '''Insert data into the Dabatabe.
-    Get data from uscities.csv, process data, and put the processed data into the Database.
+    Get cities data from uscities.csv, process data, and put the processed data into the Database.
 
     Parameters
     ----------
@@ -503,13 +519,21 @@ def load_locations():
 
 
 def load_events(events_list):
-    '''
-    (my) Add Docstring
-    events_list -> a list of state event dictionaries
-    i.e. michigan_all_events -> a list of dictionaries of all michigan events
-    i.e. [{'event_name': 'Drag Queen Bingo - Bus Stop Bar and Grille', 'event_location': 'The Bus Stop Bar & Grille', 'event_city': ' Birch Run', 'event_state': 'MI', 'event_day': 'Thu', 'event_date': 'Apr 16', 'event_time': '8:00 PM'}]
+    '''Insert data into the Dabatabe.
+    Process event data retrieved from crawled & scraped website, and put the processed data into the Database.
 
-    retrun: none
+    Parameters
+    ----------
+    events_list: list
+        a list of state event dictionaries
+        i.e. michigan_all_events -> a list of dictionaries of all michigan events
+        i.e. [{'event_name': 'Drag Queen Bingo - Bus Stop Bar and Grille', 'event_location': 
+        'The Bus Stop Bar & Grille', 'event_city': ' Birch Run', 'event_state': 'MI', 
+        'event_day': 'Thu', 'event_date': 'Apr 16', 'event_time': '8:00 PM'}]
+
+    Returns
+    -------
+    None
     '''
     # Step 5
     select_location_id_sql = '''
@@ -547,30 +571,37 @@ def load_events(events_list):
 
 
 def load_restaurants(restaurant_list, a_city):
-    '''
-    (my) Add Docstring
-    restaurant_list -> a list of a user's city restaurant information dicts
-    i.e. michigan_one_thousand_restaurants -> a list of dictionaries of 1000 user's city restaurants info
-    i.e. 	[{
-		'id': 'HYrqw4xlLCNDptBHGrTIbQ',
-		'alias': 'dime-store-detroit-4',
-		'name': 'Dime Store',
-		'image_url': 'https://s3-media4.fl.yelpcdn.com/bphoto/tBmxNQQCDvHYj4Fq_drkVw/o.jpg',
-		'is_closed': False,
-		'url': 'https://www.yelp.com/biz/dime-store-detroit-4?adjust_creative=tNtwZIWDRcDD5YP9E7ekhQ&utm_campaign=yelp_api_v3&utm_medium=api_v3_business_search&utm_source=tNtwZIWDRcDD5YP9E7ekhQ',
-		'review_count': 1481,
-        ...},
-        {
+    '''Insert data into the Dabatabe.
+    Process restaurnat data retrieved from Yelp Fusion API, and put the processed data into the Database.
+
+    Parameters
+    ----------
+    restaurant_list: list
+        a list of dictionaries of a user's city restaurant information
+        i.e. 	[{
+            'id': 'HYrqw4xlLCNDptBHGrTIbQ',
+            'alias': 'dime-store-detroit-4',
+            'name': 'Dime Store',
+            'image_url': 'https://s3-media4.fl.yelpcdn.com/bphoto/tBmxNQQCDvHYj4Fq_drkVw/o.jpg',
+            'is_closed': False,
+            'url': 'https://www.yelp.com/biz/dime-store-detroit-4?adjust_creative=tNtwZIWDRcDD5YP9E7ekhQ&utm_campaign=yelp_api_v3&utm_medium=api_v3_business_search&utm_source=tNtwZIWDRcDD5YP9E7ekhQ',
+            'review_count': 1481,
+            ...},
+            {
+                ...
+            },
+            {
+                ...
+            },
             ...
-        },
-        {
-            ...
-        },
-        ...
-        ]
-    a_city => string (i.e. detroit, ann arbor) -> use this to only get that city's restaurant
-    (sometime i.e. detroit but get near restaurant)
-    retrun: none
+            ]
+
+    a_city: string
+        name of the city (i.e. detroit, ann arbor)
+
+    Returns
+    -------
+    None
     '''
     # Step 5
     select_location_id_sql = '''
@@ -579,7 +610,7 @@ def load_restaurants(restaurant_list, a_city):
     '''
 
     # Becuase the resaurant bus id is unique, I didn't make it as auto increment.
-    # Need to get the restaurant bus id as a PK 
+    # Need to get the restaurant bus id as a PK
     insert_restaurant_sql = '''
         INSERT INTO Restaurants
         VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -599,18 +630,16 @@ def load_restaurants(restaurant_list, a_city):
         JOIN Locations
         ON Restaurants.LocationId = Locations.Id
     '''
-    # print(f"q: {q}")
+
     result_q = cur.execute(q).fetchall()
-    # result_q: [('Detroit',), ('Detroit',), ('Detroit',), ('Detroit',), ('Detroit',), ('Detroit',), 
+    # i.e. result_q: [('Detroit',), ('Detroit',), ('Detroit',), ('Detroit',), ('Detroit',), ('Detroit',), 
     # ('Detroit',), ('Detroit',), ('Detroit',), ('Detroit',), ('Detroit',), ('Detroit',), 
     # ('Detroit',), ('Detroit',), ('Detroit',), ('Detroit',),…]
 
-    # print(f"result_q: {result_q}")
-
     condition_check = 0
 
-    # For the first time use, there will be empty item in result_q. For that case, just skip for a_tuple in result_q: iterataion
-    # and got to if condition_check == 0: for row in restaurant_list:
+    # For the first time use, there will be empty item in result_q. For that case, just skip "for a_tuple in result_q:" iterataion
+    # and go to "if condition_check == 0: for row in restaurant_list:"
     if result_q:
         for a_tuple in result_q:
             if a_city != a_tuple[0].lower():
@@ -665,15 +694,28 @@ def load_restaurants(restaurant_list, a_city):
         conn.close()
 
 
+'''
+Part 5: Data Processing
+'''
 # Restaurant Query
 def restaurants_query_process(a_city, data_selection):
-    '''
-    (my) Add Docstring
-    a_city -> string (lower)
-    i.e. detroit, ann arbor
-    data_selection -> string
-    i.e. total_number_of_restaurants, average_restaurant_rating
-    return a list of tuple(s) with average rating by city
+    '''Process restaurants query and return result as a list of tuple(s)
+
+    Parameters
+    ----------
+    a_city: string (lower case)
+        name of a city (i.e. detroit, ann arbor)
+
+    data_selection: string
+        name of the data selection
+        (i.e. total_number_of_restaurants, average_restaurant_rating)
+
+    Returns
+    -------
+    list
+        result as a list of tuple(s)
+        # i.e. [(696, 'Detroit')] <= Total Restaurants numbers in Detroit
+        # i.e. [(3.9331896551724137, 'Detroit')] <= Average Rating in Detroit
     '''
     a_city_capital = capitalize_city_name(a_city)
 
@@ -698,8 +740,6 @@ def restaurants_query_process(a_city, data_selection):
     cur.execute(query)
     result = cur.fetchall()
 
-    # print(result)
-
     conn.close()
 
     return result
@@ -707,13 +747,22 @@ def restaurants_query_process(a_city, data_selection):
 
 # Events Query
 def events_query_process(a_city, data_selection):
-    '''
-    (my) Add Docstring
-    a_city -> string (lower)
-    i.e. detroit, ann arbor
-    data_selection -> string
-    i.e. total_number_of_events, total_number_of_events_on_weekend, total_number_of_events_on_weekday
-    return a list of tuple(s) with average rating by city
+    '''Process event query and return result as a list of tuple(s)
+
+    Parameters
+    ----------
+    a_city: string (lower case)
+        name of a city (i.e. detroit, ann arbor)
+
+    data_selection: string
+        name of the data selection
+        (i.e. total_number_of_events, total_number_of_events_on_weekend, total_number_of_events_on_weekday)
+
+    Returns
+    -------
+    list
+        result as a list of tuple(s)
+        # i.e. [(180, 'Detroit')] <= Total Events numbers in Detroit
     '''
     a_city_capital = capitalize_city_name(a_city)
 
@@ -740,19 +789,24 @@ def events_query_process(a_city, data_selection):
     cur.execute(query)
     result = cur.fetchall()
 
-    # print(result)
-
     conn.close()
 
     return result
 
 # Assistive function to capitalize city name
 def capitalize_city_name(a_city):
-    '''
-    (my) Add Docstring
-    a_city -> string (lower)
-    i.e. detroit, ann arbor
-    return a_city_capital (i.e. Detroit, Ann Arbor)
+    '''Make city name capitalized.
+
+    Parameters
+    ----------
+    a_city: string (lower case)
+        name of a city (i.e. detroit, ann arbor)
+
+    Returns
+    -------
+    string
+        capitalized city name
+        # i.e. (i.e. Detroit, Ann Arbor)
     '''
     a_city_capital = ""
 
@@ -777,37 +831,69 @@ def capitalize_city_name(a_city):
 
 # Configure float formatting
 def float_formatting(float_number):
-    '''
-    (my) Add Docstring
-    float_number -> float
-    i.e. 3.9331896551724137
-    return i.e. 3.93
-    '''
+    '''Configure flot numbers digits to one decimal.
+    i.e. 3.9331896551724137 to 3.9
 
+    Parameters
+    ----------
+    float_number: float
+        float number
+
+    Returns
+    -------
+    float
+        formatted float number to one decimal
+        (i.e 3.9)
+    '''
     float_formatted = "{:.1f}".format(float_number)
 
     return float_formatted
 
+
 '''
-Part 6 Data Presentation (Flask and Plotly)
+Part 6: Data Presentation (Flask and Plotly)
 '''
 # app -> defined on the top
 # Home page
 @app.route('/')
 def index():
-    # Clear user_city so that it can take new one every time.
+    ''' Control home page and return index.html template.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    html template
+        return index.html template
+    '''
+    # Clear user_city list so that it can take new one every time.
     user_city.clear()
     return render_template('index.html')
 
 # Options Page
 @app.route('/options', methods=['POST'])
 def options():
+    ''' Control options page and return 'options.html' template or 'error.html' tempate
+    if there's an error with parameters.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    html template
+        return 'options.html' template or 'error.html' template if there's an error with user_city
+        parameter.
+    '''
     mi_cities_lowered = get_cities_name("MI")
     # mi_cities_lowered -> a list of MI chities lowered (i.e. ann arbor, lansing)
     user_input = request.form['city_input']
     user_input_lower = user_input.lower()
 
-    # user_city (list)was defined on the top so that other function can use it too.
+    # user_city (list) was defined on the top so that other function can use it too.
     user_city.append(capitalize_city_name(user_input))
 
     if user_input_lower in mi_cities_lowered:
@@ -815,9 +901,20 @@ def options():
     else:
         return render_template('error.html', user_city=user_city[0])
 
-# Restaurant Page
+# Category Page
 @app.route('/category', methods=['POST'])
 def category():
+    ''' Control category page and return 'category.html' template with parameters.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    html template with parameters
+        return 'category.html' template with category and category_capitalize parameters.
+    '''
     # category is either "events" or "restaurants"
     category = request.form['category_compare']
 
@@ -829,6 +926,20 @@ def category():
 # Results Page
 @app.route('/category/<category>/results', methods=['POST'])
 def results(category):
+    ''' Control results page and return 'results.html' template with parameters.
+    If "barplot" was checked on the category page, the results page will show a bar graph from Plotly.
+    If it was not checked, the results page will display a table instead.
+
+    Parameters
+    ----------
+    category: string
+        category name (either "events" or "restaurants")
+
+    Returns
+    -------
+    html template
+        return 'results.html' template with parameters.
+    '''
     data_selection = request.form['category_radio']
     data_selection_split = data_selection.split('_')
 
@@ -847,7 +958,8 @@ def results(category):
     # Restaurants
     if data_selection == 'total_number_of_restaurants' or data_selection == 'average_restaurant_rating':
         '''
-        Detroit's City's Restaurant should be already done in the main section.
+        Detroit's City's Restaurant (# Get Detroit's Restaurant information and put it to the DB)
+        => should be already done in the main section.
         '''
 
         '''
@@ -865,8 +977,6 @@ def results(category):
         # i.e. Average Rating in Detroit: [(3.9331896551724137, 'Detroit')]
         detroit_result = restaurants_query_process('detroit', data_selection)[0][0]
         user_result = restaurants_query_process(user_city_results_lower, data_selection)[0][0]
-
-        # print(f"type: {type(detroit_result)}")
 
         if type(detroit_result) is float:
             detroit_result = float_formatting(detroit_result)
@@ -913,9 +1023,8 @@ def results(category):
 
 
 if __name__ == "__main__":
-
     '''
-    Part 4 Database Accessing
+    Part 4: Database Accessing
     '''
     # Create the database tables
     create_db()
@@ -923,10 +1032,16 @@ if __name__ == "__main__":
     load_locations()
 
     '''
-    Test Part 1 and 2
+    Part 2: Caching
     '''
     # Use Cache
     CACHE_DICT = open_cache()
+
+    '''
+    Part 4 Database Access and Storage - Michigan Events Data and Detroit Restaurant Data
+    Need to retrieve & configure Michigan Events Data and Detroit Restaurant Data before a user enters
+    his/her city in MI.
+    '''
     '''
     Events in Michigan
     '''
@@ -945,7 +1060,6 @@ if __name__ == "__main__":
         a_event_dict["event_time"] = event_time[i]
         michigan_all_events.append(a_event_dict)
 
-    # print(michigan_all_events)
     print(f"total # of michigan events data: {len(michigan_all_events)}")
 
     # Insert Michigan State Events records to the database
