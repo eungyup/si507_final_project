@@ -17,7 +17,7 @@ CACHE_DICT = {}
 DB_NAME = "city_compare.sqlite"
 
 # For Event
-BASIC_EVENT_BRITE_URL = "https://www.eventbrite.com/d/mi"
+MICHIGAN_EVENT_URL= 'https://www.eventbrite.com/d/united-states--michigan/all-events/'
 
 event_names = []
 
@@ -33,14 +33,12 @@ event_state = []
 # Event Crawling Numbers for Michigan (State)
 state_event_crawling_numbers = 52
 
-# Event Carwling Numbers for each city
-# city_event_crawling_numbers = 7
-
 # For Restaurant
 YELP_API_URL="https://api.yelp.com/v3/businesses/search"
 YELP_API_KEY = secrets.YELP_API_KEY
 
-# For Cities Names
+# For US Cities
+# Reference: The uscities csv file was downloaded from https://simplemaps.com/data/us-cities.
 US_CITIES = "uscities.csv"
 
 # For Flask
@@ -50,13 +48,12 @@ app = Flask(__name__)
 user_city = []
 
 '''
-(my)
 Part 1: Data Collection
 '''
-# (my) Part1 - Eventbrite
-# (my) Scraping each page
+# Part1 - Eventbrite
+# Scraping each page
 def get_event_information(a_page_url):
-    '''Get event information and store it in each event lists
+    '''Get event information and store it in each event lists.
 
     Parameters
     ----------
@@ -134,12 +131,18 @@ def get_event_information(a_page_url):
         if len(calendar_split) <= 1:
             # print(calendar_split)
             current_date_time = datetime.datetime.now()
+            tomorrow_date_time = current_date_time + datetime.timedelta(days=1)
 
-            day = current_date_time.strftime("%a")
-            event_day.append(day)
-
-            date = current_date_time.strftime("%b")+ " " + current_date_time.strftime("%d")
-            event_date.append(date)
+            if 'Today' in calendar_split[0]:
+                day = current_date_time.strftime("%a")
+                event_day.append(day)
+                date = current_date_time.strftime("%b")+ " " + current_date_time.strftime("%d")
+                event_date.append(date)
+            else:
+                day = tomorrow_date_time.strftime("%a")
+                event_day.append(day)
+                date = tomorrow_date_time.strftime("%b")+ " " + tomorrow_date_time.strftime("%d")
+                event_date.append(date)
 
             calendar_split_at = calendar_split[0].split('at')
             event_time.append(calendar_split_at[1])
@@ -149,17 +152,17 @@ def get_event_information(a_page_url):
             event_date.append(calendar_split[1])
             event_time.append(calendar_split[2])
 
+
 # Crawling
 def crawl_event_pages(event_brite_state_url, event_crawling_numbers):
     '''Crawling eventbrite pages and get event information from each page.
 
     Parameters
     ----------
-    event_brite_city_url: string
-        The combied event_brite_state_url (BASIC_EVENT_BRITE_URL + state)
+    event_brite_state_url: string
         i.e. https://www.eventbrite.com/d/united-states--michigan/all-events/
     event_crawling_numbers: int
-        i.e. michigan state => 25
+        i.e. 52 (state_event_crawling_numbers)
     Returns
     -------
     none
@@ -202,15 +205,14 @@ def get_restaurant_information(a_city):
             'limit': 50,
         }
         response = make_request_with_cache(YELP_API_URL, params=params, headers=headers)
-        # result = response.json()
-        # Because sometimes there are not 1000 restaurants in a city, the response may retrun "error" key
+        # Because sometimes there are not 1000 restaurants in a city, the response may retrun 'error' key
         # instead of 'businesses' key. To prevent this, check if there is a 'business' key to exclude to append
         # error data
         if 'businesses' in response.keys():
             result_business = response['businesses']
             for item in result_business:
                 total_result.append(item)
-    # print(f"total_result: {total_result}")
+
     return total_result
 
 
@@ -227,9 +229,6 @@ def get_yelp_offset_number():
     list
         a list of offset numbers
     '''
-    '''
-    (my) Add Docstring
-    '''
     offset_num =[]
 
     count = 0
@@ -243,6 +242,7 @@ def get_yelp_offset_number():
 def get_cities_name(state_name):
     '''
     (my) Add Docstring
+
     got a whole list of cities names in US from https://simplemaps.com/data/us-cities
     state_name-> name of the state (two character)
     i.e."city","city_ascii","state_id","state_name","county_fips","county_name","county_fips_all","county_name_all","lat","lng","population","density","source","military","incorporated","timezone","ranking","zips","id"
@@ -930,9 +930,7 @@ if __name__ == "__main__":
     '''
     Events in Michigan
     '''
-    michigan_event_url = 'https://www.eventbrite.com/d/united-states--michigan/all-events/'
-
-    crawl_event_pages(michigan_event_url, state_event_crawling_numbers)
+    crawl_event_pages(MICHIGAN_EVENT_URL, state_event_crawling_numbers)
 
     michigan_all_events = []
 
