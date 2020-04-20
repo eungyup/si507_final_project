@@ -6,7 +6,7 @@ import secrets
 import csv
 import sqlite3
 import time
-from flask import Flask, render_template, render_template, request
+from flask import Flask, render_template, request
 import plotly.graph_objects as go
 
 # For Caching
