@@ -98,3 +98,7 @@ Each data will be displayed in a table or in a bar graph (from Plotly) if the us
 
 For more details with screenshots, please check <a href="https://docs.google.com/document/d/1RhOX70C15jaHq6I7sNvL7VkJ8ZQPwxbqJtbdodGX6To/edit#heading=h.ugpnrzo7khuz">here</a>.
 
+## Demo Video
+You can check my demo video <a href="https://www.loom.com/share/9ece79613389493ab8e9086fda620545">here</a>.
+
+(Backup Video: https://youtu.be/XvKLIGa1T5Q)
