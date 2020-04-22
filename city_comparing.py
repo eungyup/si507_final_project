@@ -87,11 +87,18 @@ def get_event_information(a_page_url):
                     # Location Name
                     location_split = location.split(" •")
                     event_location.append(location_split[0])
-                    # City
-                    city_split = location_split[1].strip().split(", ")
-                    event_city.append(city_split[0])
-                    # State
-                    event_state.append(city_split[1])
+                    # Online Event
+                    if len(location_split[1].strip().split(", ")) <= 1:
+                        city = "City Not Available"
+                        state = "Stat Not Available"
+                        event_city.append(city)
+                        event_state.append(state)
+                    else:
+                        # City
+                        city_split = location_split[1].strip().split(", ")
+                        event_city.append(city_split[0])
+                        # State
+                        event_state.append(city_split[1])
                 else:
                     # Location i.e. "Fisherman's Landing Launch and Campground"
                     event_location.append(location)
