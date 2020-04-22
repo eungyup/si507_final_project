@@ -1,6 +1,6 @@
 # SI507 Final Project - City Compare Python Flask App
-The goal of the application is to compare a user’s city in Michigan (i.e. Ann Arbor, Farmington, Lansing, etc.) with Detroit city, the largest city in Michigan, by checking how each city’s restaurants are performing and what types of events are available for each city.
-For example, the application will compare the average restaurant rating in the user’s city (i.e. Ann Arbor, Farmington, Lansing, etc.) with the one in Detroit. Also, the application will check how many weekend events are available for each city and compare them.
+The goal of the application is to compare a user’s city in Michigan (i.e. Ann Arbor, Lansing, etc.) with Detroit city, the largest city in Michigan, by checking how each city’s restaurants are performing and what types of events are available for each city.
+For example, the application will compare the average restaurant rating in the user’s city (i.e. Ann Arbor, Lansing, etc.) with the one in Detroit. Also, the application will check how many weekend events are available for each city and compare them.
 
 ## Getting Started
 
