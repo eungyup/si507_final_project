@@ -125,7 +125,6 @@ def get_event_information(a_page_url):
     For calendar
     '''
     calendar_price_container = soup.find_all('div', class_='search-event-card-square-image')
-    # print(calendar_container)
     for item in calendar_price_container:
         # Event Calendar
         calendar = item.find('div', class_='eds-text-color--primary-brand eds-l-pad-bot-1 eds-text-weight--heavy eds-text-bs').text.strip()
